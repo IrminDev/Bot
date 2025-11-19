@@ -46,12 +46,7 @@ export const login = async (req, res) => {
             return res.redirect('/auth/login');
         }
 
-        // Crear sesión
-        req.session.userId = user.id;
-        req.session.userEmail = user.email;
-        req.session.userRole = user.role;
-
-        // Regenerar el ID de sesión para prevenir session fixation
+        // Regenerar la sesión para seguridad
         req.session.regenerate((err) => {
             if (err) {
                 console.error('Error al regenerar sesión:', err);
@@ -59,6 +54,7 @@ export const login = async (req, res) => {
                 return res.redirect('/auth/login');
             }
 
+            // Guardar datos en la nueva sesión
             req.session.userId = user.id;
             req.session.userEmail = user.email;
             req.session.userRole = user.role;
@@ -69,7 +65,11 @@ export const login = async (req, res) => {
             if (user.role === 'admin') {
                 return res.redirect('/admin');
             }
-            return res.redirect('/dashboard');
+            
+            // --- CORRECCIÓN AQUÍ ---
+            // Antes redirigía a '/dashboard' (que no existe)
+            // Ahora redirige a '/auth/dashboard' (que sí existe)
+            return res.redirect('/auth/dashboard');
         });
 
     } catch (error) {
@@ -140,7 +140,7 @@ export const logout = (req, res) => {
 };
 
 /**
- * Muestra el dashboard del usuario (ruta protegida de ejemplo)
+ * Muestra el dashboard del usuario
  */
 export const dashboard = (req, res) => {
     res.render("Dashboard", {

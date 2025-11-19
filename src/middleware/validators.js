@@ -16,7 +16,7 @@ export const handleValidationErrors = (req, res, next) => {
 };
 
 /**
- * Validaciones para el registro de usuario
+ * Validaciones para el registro de usuario (Público)
  */
 export const validateRegister = [
     body('email')
@@ -43,6 +43,47 @@ export const validateRegister = [
             return true;
         }),
     
+    handleValidationErrors
+];
+
+/**
+ * Validaciones para crear usuario (Admin)
+ * (Agregamos esto porque admin.routes.js lo pide)
+ */
+export const validateCreateUser = [
+    body('email')
+        .trim()
+        .isEmail()
+        .withMessage('Email inválido')
+        .normalizeEmail(),
+    
+    body('password')
+        .trim()
+        .isLength({ min: 6 })
+        .withMessage('La contraseña debe tener al menos 6 caracteres'),
+
+    handleValidationErrors
+];
+
+/**
+ * Validaciones para editar usuario (Admin)
+ * (Agregamos esto porque admin.routes.js lo pide)
+ */
+export const validateUpdateUser = [
+    body('email')
+        .trim()
+        .isEmail()
+        .withMessage('Email inválido')
+        .normalizeEmail(),
+    
+    // En update, la contraseña suele ser opcional, 
+    // pero validamos que si la envían, cumpla mínimos.
+    body('password')
+        .optional({ checkFalsy: true }) // Si está vacío, lo ignora
+        .trim()
+        .isLength({ min: 6 })
+        .withMessage('Si cambias la contraseña, debe tener 6 caracteres'),
+
     handleValidationErrors
 ];
 

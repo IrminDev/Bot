@@ -165,6 +165,9 @@
         <% } %>
 
         <form action="/auth/register" method="POST">
+            <!-- ESTA ES LA LÍNEA IMPORTANTE QUE FALTABA -->
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
             <div class="form-group">
                 <label for="email">Correo Electrónico</label>
                 <input 

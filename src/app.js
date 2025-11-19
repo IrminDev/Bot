@@ -6,6 +6,11 @@ import path from "path";
 import flash from "connect-flash";
 import prisma from "./lib/prisma.js";
 
+import morgan from "morgan"; 
+import cookieParser from "cookie-parser"; 
+import methodOverride from "method-override"; 
+import csurf from "csurf"; 
+
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import { generalLimiter } from "./middleware/rateLimiter.js";
@@ -24,15 +29,17 @@ if (result.error) {
   console.log('Loaded environment variables:', Object.keys(result.parsed || {}));
 }
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
-console.log('DATABASE_URL value:', process.env.DATABASE_URL);
 console.log('SESSION_SECRET:', process.env.SESSION_SECRET ? 'Set' : 'Not set');
 
 const app = express();
 
-// Seguridad con Helmet (configuración más permisiva para desarrollo)
+// Logger (Morgan)
+app.use(morgan('dev'));
+
+// Seguridad con Helmet
 app.use(
     helmet({
-        contentSecurityPolicy: false, // Desactivar CSP para desarrollo
+        contentSecurityPolicy: false,
     })
 );
 
@@ -40,12 +47,18 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Method Override
+app.use(methodOverride('_method'));
+
+// Cookie Parser
+app.use(cookieParser(process.env.SESSION_SECRET));
+
 // Configuración de sesiones
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
-        saveUninitialized: false, // Cambiado a false por seguridad
+        saveUninitialized: false,
         cookie: { 
             httpOnly: true, 
             sameSite: "strict",
@@ -54,15 +67,31 @@ app.use(
     })
 );
 
-// Flash messages
+// --- CORRECCIÓN 1: Flash debe ir ANTES de Csurf ---
+// Así, si Csurf falla, 'req.flash' ya existe para mostrar el error.
 app.use(flash());
 
-// Variables globales para las vistas
+// --- CORRECCIÓN 2: Csurf va DESPUÉS de Flash ---
+app.use(csurf({ cookie: true }));
+
+// Middleware para variables globales en las vistas
 app.use((req, res, next) => {
     res.locals.currentUser = req.session.userId || null;
     res.locals.userEmail = req.session.userEmail || null;
     res.locals.userRole = req.session.userRole || null;
+    
+    // Enviamos el token a todas las vistas
+    res.locals.csrfToken = req.csrfToken();
+    
     next();
+});
+
+// Manejador de error específico para CSRF
+app.use((err, req, res, next) => {
+    if (err.code !== 'EBADCSRFTOKEN') return next(err);
+    // Ahora sí funcionará req.flash porque flash() se cargó antes
+    req.flash('error', 'Token de seguridad faltante o inválido. Recarga la página.');
+    res.redirect('back');
 });
 
 // Motor de vistas
@@ -84,7 +113,7 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 
-// Manejo de errores
+// Manejo de errores generales
 app.use(notFoundHandler);
 app.use(errorHandler);
 
