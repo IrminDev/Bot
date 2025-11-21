@@ -26,6 +26,8 @@ export const showRegisterForm = (req, res) => {
  */
 export const login = async (req, res) => {
     try {
+        console.log("Procesando login...");
+
         const { email, password } = req.body;
 
         // Buscar usuario por email

@@ -12,8 +12,8 @@ router.get('/login', isGuest, authController.showLoginForm);
 router.get('/register', isGuest, authController.showRegisterForm);
 
 // Rutas de autenticación con rate limiting y validación
-router.post('/login', isGuest, authLimiter, validateLogin, authController.login);
-router.post('/register', isGuest, registerLimiter, validateRegister, authController.register);
+router.post('/login', authLimiter, validateLogin, authController.login);
+router.post('/register', registerLimiter, validateRegister, authController.register);
 
 // Ruta de logout (protegida)
 router.post('/logout', isAuthenticated, authController.logout);

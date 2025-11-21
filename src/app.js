@@ -9,7 +9,6 @@ import prisma from "./lib/prisma.js";
 import morgan from "morgan"; 
 import cookieParser from "cookie-parser"; 
 import methodOverride from "method-override"; 
-import csurf from "csurf"; 
 
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
@@ -67,12 +66,7 @@ app.use(
     })
 );
 
-// --- CORRECCIÓN 1: Flash debe ir ANTES de Csurf ---
-// Así, si Csurf falla, 'req.flash' ya existe para mostrar el error.
 app.use(flash());
-
-// --- CORRECCIÓN 2: Csurf va DESPUÉS de Flash ---
-app.use(csurf({ cookie: true }));
 
 // Middleware para variables globales en las vistas
 app.use((req, res, next) => {
@@ -80,18 +74,7 @@ app.use((req, res, next) => {
     res.locals.userEmail = req.session.userEmail || null;
     res.locals.userRole = req.session.userRole || null;
     
-    // Enviamos el token a todas las vistas
-    res.locals.csrfToken = req.csrfToken();
-    
     next();
-});
-
-// Manejador de error específico para CSRF
-app.use((err, req, res, next) => {
-    if (err.code !== 'EBADCSRFTOKEN') return next(err);
-    // Ahora sí funcionará req.flash porque flash() se cargó antes
-    req.flash('error', 'Token de seguridad faltante o inválido. Recarga la página.');
-    res.redirect('back');
 });
 
 // Motor de vistas
