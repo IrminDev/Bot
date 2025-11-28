@@ -68,9 +68,6 @@ export const login = async (req, res) => {
                 return res.redirect('/admin');
             }
             
-            // --- CORRECCIÓN AQUÍ ---
-            // Antes redirigía a '/dashboard' (que no existe)
-            // Ahora redirige a '/auth/dashboard' (que sí existe)
             return res.redirect('/auth/dashboard');
         });
 

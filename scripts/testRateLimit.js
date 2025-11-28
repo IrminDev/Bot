@@ -30,9 +30,8 @@ async function testTimeProtection() {
             console.log(`Intento ${i + 1}: HTTP ${res.status} - ${elapsed}ms`);
             
             if (res.status === 429) {
-                console.log("✅ BLOQUEADO POR TIME PROTECTION");
+                console.log("BLOQUEADO POR TIME PROTECTION");
                 blockedCount++;
-                console.log(`   Redirigido a: ${location}`);
             } else if (res.status === 302) {
                 console.log(`📝 Redirigido a: ${location}`);
             } else {
@@ -42,7 +41,7 @@ async function testTimeProtection() {
             
             // NO hay pausa entre intentos - esto disparará la protección
         } catch (error) {
-            console.error(`❌ Error en intento ${i + 1}:`, error.message);
+            console.error(`Error en intento ${i + 1}:`, error.message);
             console.log("");
         }
     }
@@ -51,12 +50,12 @@ async function testTimeProtection() {
     console.log("Prueba finalizada.");
     console.log(`Total de bloqueos detectados: ${blockedCount}`);
     console.log("");
-    console.log("✅ RESULTADO:");
+    console.log("RESULTADO:");
     if (blockedCount >= 1) {
         console.log("   Time protection funcionando correctamente!");
         console.log(`   Intentos bloqueados: ${blockedCount}`);
     } else {
-        console.log("   ⚠️  La protección de tiempo no se activó.");
+        console.log("   La protección de tiempo no se activó.");
     }
     console.log("=".repeat(60));
 }
