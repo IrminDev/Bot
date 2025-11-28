@@ -1,5 +1,62 @@
 import rateLimit from 'express-rate-limit';
 
+// Store para rastrear timestamps de intentos por IP
+const attemptTimestamps = new Map();
+const blockedIPs = new Map();
+
+/**
+ * Middleware para detectar intentos rápidos consecutivos
+ * Bloquea si hay 2 intentos en menos de 200ms
+ */
+export const timeProtection = (req, res, next) => {
+    const clientIP = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    
+    // Verificar si la IP está bloqueada
+    if (blockedIPs.has(clientIP)) {
+        const blockUntil = blockedIPs.get(clientIP);
+        if (now < blockUntil) {
+            const minutesLeft = Math.ceil((blockUntil - now) / 60000);
+            console.log(`🚫 IP ${clientIP} aún bloqueada (${minutesLeft} minutos restantes)`);
+            req.flash('error', `Has sido bloqueado por intentos sospechosos. Intenta nuevamente en ${minutesLeft} minutos.`);
+            return res.status(429).send('Bloqueado por 15 minutos debido a intentos sospechosos');
+        } else {
+            // El bloqueo expiró, limpiar
+            blockedIPs.delete(clientIP);
+            attemptTimestamps.delete(clientIP);
+        }
+    }
+    
+    // Obtener el último intento
+    const lastAttempt = attemptTimestamps.get(clientIP);
+    
+    if (lastAttempt) {
+        const timeDiff = now - lastAttempt;
+        
+        // Si hay 2 intentos en menos de 200ms, bloquear por 15 minutos
+        if (timeDiff < 200) {
+            const blockUntil = now + (15 * 60 * 1000); // 15 minutos
+            blockedIPs.set(clientIP, blockUntil);
+            console.log(`🚫 IP ${clientIP} bloqueada por intentos rápidos (${timeDiff}ms entre intentos)`);
+            req.flash('error', 'Detectados intentos sospechosos. Bloqueado por 15 minutos.');
+            return res.status(429).send('Bloqueado por 15 minutos debido a intentos sospechosos');
+        }
+    }
+    
+    // Registrar este intento
+    attemptTimestamps.set(clientIP, now);
+    
+    // Limpiar registros antiguos (más de 1 segundo)
+    setTimeout(() => {
+        const current = attemptTimestamps.get(clientIP);
+        if (current === now) {
+            attemptTimestamps.delete(clientIP);
+        }
+    }, 1000);
+    
+    next();
+};
+
 /**
  * Rate limiter para rutas de autenticación
  * Previene ataques de fuerza bruta

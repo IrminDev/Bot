@@ -2,17 +2,17 @@ import express from 'express';
 import * as authController from '../controllers/auth.controller.js';
 import { isGuest, isAuthenticated } from '../middleware/auth.middleware.js';
 import { validateLogin, validateRegister } from '../middleware/validators.js';
-import { authLimiter, registerLimiter } from '../middleware/rateLimiter.js';
+import { authLimiter, registerLimiter, timeProtection } from '../middleware/rateLimiter.js';
 
 
 const router = express.Router();
 
-// Rutas públicas (solo accesibles si NO está autenticado)
-router.get('/login', isGuest, authController.showLoginForm);
-router.get('/register', isGuest, authController.showRegisterForm);
+// Rutas públicas
+router.get('/login', authController.showLoginForm);
+router.get('/register', authController.showRegisterForm);
 
-// Rutas de autenticación con rate limiting y validación
-router.post('/login', authLimiter, validateLogin, authController.login);
+// Rutas de autenticación con protección de tiempo, rate limiting y validación
+router.post('/login', timeProtection, authLimiter, validateLogin, authController.login);
 router.post('/register', registerLimiter, validateRegister, authController.register);
 
 // Ruta de logout (protegida)
